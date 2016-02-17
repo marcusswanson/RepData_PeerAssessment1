@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 
 ## Loading and preprocessing the data
@@ -11,7 +6,8 @@ output:
 This section downloads the data from the supplied link [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
 places it in the data folder, and then extracts the activity.csv contained within.  
 
-```{r, message=FALSE, warning=FALSE}
+
+```r
         library(dplyr)
         library(ggplot2)
 
@@ -36,11 +32,11 @@ places it in the data folder, and then extracts the activity.csv contained withi
 
 We also preprocess the data, and change the date field to be a date column and remove any data where the number of steps is NA
 
-```{r}
+
+```r
         dataWithNAs <- read.csv("./data/zipcontents/activity.csv", header = TRUE, sep= ",");
         dataWithNAs$date <- as.POSIXct(strptime(dataWithNAs$date, format="%Y-%m-%d"))
         data <- dataWithNAs[!is.na(dataWithNAs$steps),]
-
 ```
 
 ## What is mean total number of steps taken per day?
@@ -49,7 +45,8 @@ We also preprocess the data, and change the date field to be a date column and r
 
 To answer the question, _What is mean total number of steps taken per day?_ can be broken down into a chart showing the total steps per day:
 
-```{r}
+
+```r
         stepsPerDay <- summarise(group_by(data, date), sum(steps))
 
         names(stepsPerDay)[1] <- "date"
@@ -58,21 +55,25 @@ To answer the question, _What is mean total number of steps taken per day?_ can 
         print (stepsPerDayPlot)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png)
+
 ### 2. Calculate and report the **mean** and **median** total number of steps taken per day
 
 Which means that the mean total steps per day is calculated by 
 
-```{r} 
+
+```r
         totalStepsPerDayMean <- mean(stepsPerDay$totalSteps)
 ```
 
-giving a mean value of **`r format(totalStepsPerDayMean, digits=5)`** and the median is calculated by
+giving a mean value of **10766** and the median is calculated by
 
-```{r} 
+
+```r
         totalStepsPerDayMedian <- median(stepsPerDay$totalSteps)
 ```
 
-giving a median value of **`r format(totalStepsPerDayMedian, digits=5)`**
+giving a median value of **10765**
 
 ## What is the average daily activity pattern?
 
@@ -80,8 +81,8 @@ giving a median value of **`r format(totalStepsPerDayMedian, digits=5)`**
 
 The following code will create a time series plot (i.e. `type = "l"`) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r}
-        
+
+```r
         averageStepsPerInterval <- summarise(group_by(data, interval), mean(steps))
 
         names(averageStepsPerInterval)[1] <- "interval"
@@ -90,18 +91,19 @@ The following code will create a time series plot (i.e. `type = "l"`) of the 5-m
         plot(x=averageStepsPerInterval$interval, xlab = "Interval", y=averageStepsPerInterval$averageSteps, ylab = "Average number of steps taken, averaged across all days", type="l")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png)
+
 
 ### 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 To determine the 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps we can run the following:
 
-```{r, results='hide'}
-        
+
+```r
        averageStepsPerInterval$interval[which.max(averageStepsPerInterval$averageSteps)]
-        
 ```
 
-Which gives the interval **`r averageStepsPerInterval$interval[which.max(averageStepsPerInterval$averageSteps)]`** as shown in the plot above.
+Which gives the interval **835** as shown in the plot above.
 
 ## Inputing missing values
 
@@ -111,40 +113,59 @@ bias into some calculations or summaries of the data.
 
 ### 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with `NA`s)
 
-```{r, results='hide'}
 
+```r
         rowsWithNAs <- dataWithNAs[rowSums(is.na(dataWithNAs)) > 0, ]
         nrow(rowsWithNAs)
-        
 ```
 
-Which gives **`r nrow(rowsWithNAs)`** rows
+Which gives **2304** rows
         
         
 ### 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
 Only the steps rows have NA values, as shown by
 
-```{r}
+
+```r
         noOfNAIntervalRows <- nrow(dataWithNAs[is.na(dataWithNAs$interval),])
         noOfNADateRows <- nrow(dataWithNAs[is.na(dataWithNAs$date),])
         noOfNAStepsRows <- nrow(dataWithNAs[is.na(dataWithNAs$steps),])
-
 ```
 
-giving the number of NA interval rows as **`r noOfNAIntervalRows`**, the number of NA date rows as **`r noOfNADateRows`** and the number of NA steps rows as **`r noOfNAStepsRows`**
+giving the number of NA interval rows as **0**, the number of NA date rows as **0** and the number of NA steps rows as **2304**
 
 ### 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 The new data set can be created by filling in the NA values with the average steps for that interval as so:
 
-```{r}
+
+```r
         dataWithCompletedNAs <- dataWithNAs
         dataWithCompletedNAs <- merge(dataWithCompletedNAs, averageStepsPerInterval, all.x = TRUE)
         dataWithCompletedNAs$steps <- replace(dataWithCompletedNAs$steps, which(is.na(dataWithCompletedNAs$steps)==TRUE), dataWithCompletedNAs$averageSteps)
+```
+
+```
+## Warning in replace(dataWithCompletedNAs$steps,
+## which(is.na(dataWithCompletedNAs$steps) == : number of items to replace is
+## not a multiple of replacement length
+```
+
+```r
         dataWithCompletedNAs <- dataWithCompletedNAs[order(dataWithCompletedNAs$date),]
         
         head(dataWithCompletedNAs[1:3])
+```
+
+```
+##     interval    steps       date
+## 1          0 1.716981 2012-10-01
+## 63         5 1.716981 2012-10-01
+## 128       10 1.716981 2012-10-01
+## 205       15 1.716981 2012-10-01
+## 264       20 1.716981 2012-10-01
+## 327       25 1.716981 2012-10-01
 ```
 
 
@@ -152,7 +173,8 @@ The new data set can be created by filling in the NA values with the average ste
 
 The histogram can be gerenated using the following code:
 
-```{r}
+
+```r
         stepsPerDayWithCompletedNAs <- summarise(group_by(dataWithCompletedNAs, date), sum(steps))
 
         names(stepsPerDayWithCompletedNAs)[1] <- "date"
@@ -162,31 +184,29 @@ The histogram can be gerenated using the following code:
 
 So with the NA values filled in the histogram looks like
         
-```{r, echo=FALSE}
-        print (stepsPerDayWithCompletedNAsPlot)
-```
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png)
 
 As opposed to the previous version
         
-```{r, echo=FALSE}
-        print (stepsPerDayPlot)
-```
+![](PA1_template_files/figure-html/unnamed-chunk-13-1.png)
 
 Which means that the mean total steps per day is calculated by 
 
-```{r} 
+
+```r
         totalStepsPerDayMeanWithCompletedNAs <- mean(stepsPerDayWithCompletedNAs$totalSteps)
 ```
 
-giving a mean value of **`r format(totalStepsPerDayMeanWithCompletedNAs, digits=5)`** as opposed to the previous value of **`r format(totalStepsPerDayMean, digits=5)`**
+giving a mean value of **9371.4** as opposed to the previous value of **10766**
 
 and the median is calculated by
 
-```{r} 
+
+```r
         totalStepsPerDayMedianWithCompletedNAs <- median(stepsPerDayWithCompletedNAs$totalSteps)
 ```
 
-giving a median value of **`r format(totalStepsPerDayMedianWithCompletedNAs, digits=5)`** as opposed to the previous value of **`r format(totalStepsPerDayMedian, digits=5)`**
+giving a median value of **10395** as opposed to the previous value of **10765**
 
 So yes, adding these values does have an impact of reducing both the mean and the median slightly.
 
@@ -197,25 +217,34 @@ the dataset with the filled-in missing values for this part.
 
 1. Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 
-```{r, message=FALSE, warning=FALSE}
+
+```r
         dataWithCompletedNAs$weekday <- weekdays(dataWithCompletedNAs$date)
         dataWithCompletedNAs$weekday <- factor(dataWithCompletedNAs$weekday, c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
         levels(dataWithCompletedNAs$weekday) <- c("weekday", "weekday","weekday","weekday","weekday", "weekend", "weekend")
         head(dataWithCompletedNAs,3)
 ```
 
+```
+##     interval    steps       date averageSteps weekday
+## 1          0 1.716981 2012-10-01    1.7169811 weekday
+## 63         5 1.716981 2012-10-01    0.3396226 weekday
+## 128       10 1.716981 2012-10-01    0.1320755 weekday
+```
+
 1. Make a panel plot containing a time series plot (i.e. `type = "l"`) of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis):
 
 The code and plot produced are as follows:
 
-```{r} 
 
+```r
 library(lattice)
 plotData <- summarise(group_by(dataWithCompletedNAs, weekday, interval), mean(steps))
 names(plotData)[3] <- "numberOfSteps"
 xyplot(numberOfSteps ~ interval | weekday, type='l',layout=c(1,2), data = plotData, xlab='Interval',ylab='Number of Steps')
-        
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-17-1.png)
 
 So the short answer is **YES**, there are differences between weekday and weekend activity patterns, with weekdays showing more activity in the pre-1000 interval and weekends showing activity more evenly distributed.
 
